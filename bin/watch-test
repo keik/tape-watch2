@@ -1,0 +1,24 @@
+#!/usr/bin/env node
+
+var WatchTest = require('../')
+
+var argv = require('minimist')(process.argv.slice(2), {
+  boolean: ['h', 'v', 'w'],
+  alias: {h: 'help', o: 'outpfile', v: 'verbose', w: 'watch'}
+})
+
+if (argv.h)
+  return process.exit(_help())
+
+var watcher = new WatchTest()
+watcher.addHook()
+watcher.run()
+
+function _help() {
+  console.log(`Usage: tape-watch [tests (glob)] {OPTIONS}
+
+     --help, -h  Show this mesage.
+
+  --verbose, -v  Run as verbose mode.
+`)
+}

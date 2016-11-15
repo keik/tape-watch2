@@ -1,27 +1,116 @@
-const path = require('path')
+var chokidar = require('chokidar')
+var path = require('path')
 
-const Module = module.constructor
-const originalLoad = Module._load
-const deps = {}
+var d = require('debug')('watch-test')
 
-Module._load = function(request, parent) {
-  const id = path.join(path.dirname(parent.id), request) + '.js'
-  deps[id] = deps[id] || []
-  deps[id].push(parent.id)
-  return originalLoad.apply(this, arguments)
+module.exports = TestWatcher
+
+function TestWatcher(opts) {
+  if (!(this instanceof TestWatcher))
+    return new TestWatcher
+
+  // Dependencies map like {module: [depended from...]}
+  this.depsMap = {}
+
+  // TODO parameterize
+  this.excludePatterns = [
+    /\/node_modules\//
+  ]
+
+  // TODO parameterize
+  this.testModulePatterns = [
+    /test-.+\.js/
+  ]
+
+  // TODO parameterize
+  this.testModules = [
+    './test/fixture/test/test-b',
+    './test/fixture/test/test-c'
+  ]
+
+  this.watcher = chokidar
+    .watch()
+    .on('change', this.run)
 }
 
-// const oldExtension = require.extensions['.js'];
-// require.extensions['.js'] = function(module, filename) {
-//    const oldCompile = module._compile;
-//   module._compile = function(code, filename) {
-//     code = myTransform(code);
-//     module._compile = oldCompile;
-//     module._compile(code, filename);
-//   };
-//   oldExtension(module, filename);
-// };
+TestWatcher.prototype.add = function() {
+  d('TestWatcher#add')
+}
 
-require('./test/fixture/a')
+TestWatcher.prototype.addHook = function() {
+  d('TestWatcher#addHook')
+  var self = this
 
-console.log(deps)
+  var Module = module.constructor
+  var originalLoad = Module._load
+  Module._load = function(request, parent) {
+    d('loading module...')
+    d('  request: ', request)
+    d('  parent: ', parent.id)
+    if (!self.excludePatterns.some(p => p.test(parent.id))) {
+      let id
+      try {
+        id = require.resolve(request)
+      } catch (e) {
+        id = require.resolve(path.resolve(path.dirname(parent.id), request))
+      }
+      if (!self.excludePatterns.some(p => p.test(id))) {
+        self.depsMap[id] = self.depsMap[id] || []
+        self.depsMap[id].push(parent.id)
+        d('  cache dependencies of "' + parent.id + '"')
+      }
+    }
+    return originalLoad.apply(this, arguments)
+  }
+}
+
+TestWatcher.prototype.run = function(changed) {
+  d('TestWatcher#run')
+  var self = this
+  if (changed)
+    throw new Error('not implemented')
+  else
+    this.testModules.forEach(function(t) {
+      require(t)
+      self.watcher.add(Object.keys(self.depsMap))
+      console.log(Object.keys(self.depsMap))
+    })
+}
+
+// TODO integrate to `run` method
+/* TestWatcher.prototype.rerun = function(file) {
+ *   d('rerun', file)
+ *   console.log(Object.keys(require.cache).filter(c => !/node_modules/.test(c)))
+ *   console.log(Object.keys(require.cache).filter(c => /tape/.test(c)))
+ *   d('deleting cache of test modules...')
+ *   testModules.forEach(m => {
+ *     delete(require.cache[m])
+ *   })
+ *   d('deleting cache of test runnner modules...')
+ *   Object.keys(require.cache).filter(c => /tape/.test(c)).forEach(m => {
+ *     delete(require.cache[m])
+ *   })
+ *   console.log(Object.keys(require.cache).filter(c => !/node_modules/.test(c)))
+ *   console.log(Object.keys(require.cache).filter(c => /tape/.test(c)))
+ *   d('re-require test module')
+ *   _findTestsToRerun(file).forEach(m => {
+ *     require(m)
+ *   })
+ * }*/
+
+// TODO find test entry which depends changed file
+TestWatcher.prototype._findTestsToRerun = function(changed, acc) {
+  d('_findTestsToRerun', changed, acc)
+  /* acc = acc || []
+   * changed = Array.isArray(changed) ? changed : [changed]
+   * changed.forEach(function(c) {
+   *   if (entries.includes(c)) {
+   *     acc.push(c)
+   *   } else {
+   *     _walkToEntries(res.depends(c), acc)
+   *   }
+   * })
+   * console.log(acc)
+   * return acc*/
+  return this.testModules
+}

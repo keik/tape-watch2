@@ -18,5 +18,12 @@
   "bugs": {
     "url": "https://github.com/keik/watch-test/issues"
   },
-  "homepage": "https://github.com/keik/watch-test#readme"
+  "homepage": "https://github.com/keik/watch-test#readme",
+  "dependencies": {
+    "chokidar": "^1.6.1",
+    "debug": "^2.3.2"
+  },
+  "devDependencies": {
+    "tape": "^4.6.2"
+  }
 }

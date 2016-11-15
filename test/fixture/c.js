@@ -1,8 +1,6 @@
-var d = require('./d')
-var e = require('./e')
+var c_1 = require('./c-1')
+var c_2 = require('./c-2')
 
 module.exports = function() {
-  console.log('c')
-  d()
-  e.f2()
+  return 'c' + ' ' + c_1() + ' ' + c_2()
 }
