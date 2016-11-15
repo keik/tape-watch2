@@ -8,8 +8,8 @@ var sw = require('spawn-wrap')
 var wrapper = require.resolve('./wrap')
 
 var argv = require('minimist')(process.argv.slice(2), {
-  boolean: ['h', 'v', 'w'],
-  alias: {h: 'help', o: 'outpfile', v: 'verbose', w: 'watch'}
+  boolean: ['h', 'v'],
+  alias: {h: 'help', v: 'verbose'}
 })
 
 if (argv.h || argv._.length === 0)

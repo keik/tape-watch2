@@ -3,7 +3,6 @@ var test = require('tape')
 var concat = require('concat-stream')
 var fs = require('fs')
 var path = require('path')
-var through = require('through2')
 
 var spawn = require('child_process').spawn
 

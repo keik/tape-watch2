@@ -120,7 +120,7 @@ TestWatcher.prototype.run = function(changed) {
 }
 
 TestWatcher.prototype._deleteModuleCache = function() {
-  d('TestWatcher._deleteModuleCache')
+  d('TestWatcher#_deleteModuleCache')
   d('deleting cache of test modules...')
   this.testModules.forEach(m => {
     delete(require.cache[m])
@@ -131,7 +131,6 @@ TestWatcher.prototype._deleteModuleCache = function() {
   })
 }
 
-// TODO find test entry which depends changed file
 TestWatcher.prototype._findTestsToRerun = function(changed, acc) {
   d('TestWatcher#_findTestsToRerun', changed, acc)
   acc = acc || []
