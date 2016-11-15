@@ -27,10 +27,6 @@ function TestWatcher(opts) {
     './test/fixture/test/test-b',
     './test/fixture/test/test-c'
   ]
-
-  this.watcher = chokidar
-    .watch()
-    .on('change', this.run)
 }
 
 TestWatcher.prototype.add = function() {
@@ -66,15 +62,35 @@ TestWatcher.prototype.addHook = function() {
 
 TestWatcher.prototype.run = function(changed) {
   d('TestWatcher#run')
-  var self = this
-  if (changed)
-    throw new Error('not implemented')
-  else
-    this.testModules.forEach(function(t) {
-      require(t)
-      self.watcher.add(Object.keys(self.depsMap))
-      console.log(Object.keys(self.depsMap))
-    })
+  if (changed) {
+    this._findTestsToRerun(changed).forEach(_rerun.bind(this))
+  } else {
+    this.testModules.forEach(_rerun.bind(this))
+  }
+
+  function _rerun(test) {
+    this._deleteModuleCache()
+    require(test)
+    this.watcher = chokidar
+      .watch(Object.keys(this.depsMap))
+      .on('change', this.run.bind(this))
+  }
+}
+
+TestWatcher.prototype._deleteModuleCache = function() {
+  d('TestWatcher._deleteModuleCache')
+  d('deleting cache of test runnner modules...')
+  console.log(Object.keys(require.cache).filter(c => !/node_modules/.test(c)))
+  console.log(Object.keys(require.cache).filter(c => /tape/.test(c)))
+  this.testModules.forEach(m => {
+    delete(require.cache[m])
+  })
+  d('deleting cache of test runnner modules...')
+  Object.keys(require.cache).filter(c => /tape/.test(c)).forEach(m => {
+    delete(require.cache[m])
+  })
+  console.log(Object.keys(require.cache).filter(c => !/node_modules/.test(c)))
+  console.log(Object.keys(require.cache).filter(c => /tape/.test(c)))
 }
 
 // TODO integrate to `run` method
