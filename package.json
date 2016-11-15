@@ -1,29 +1,38 @@
 {
   "name": "watch-test",
-  "version": "1.0.0",
-  "description": "",
+  "version": "0.0.0-dev",
+  "description": "Watch changes of files and re-run only tests on dependencies of changed file.",
   "main": "index.js",
+  "bin": {
+    "watch-test": "./bin/watch-test"
+  },
   "directories": {
     "test": "test"
   },
+  "dependencies": {
+    "chokidar": "^1.6.1",
+    "debug": "^2.3.2",
+    "foreground-child": "^1.5.3",
+    "spawn-wrap": "^1.2.4"
+  },
+  "devDependencies": {
+    "tape": "^4.6.2"
+  },
   "scripts": {
-    "test": "tape test/test.js"
+    "test": "tape test/test*.js"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/keik/watch-test.git"
   },
-  "author": "",
-  "license": "ISC",
+  "author": {
+    "name": "KATO Kei",
+    "email": "k4t0.kei@gmail.com",
+    "url": "keik.info"
+  },
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/keik/watch-test/issues"
   },
-  "homepage": "https://github.com/keik/watch-test#readme",
-  "dependencies": {
-    "chokidar": "^1.6.1",
-    "debug": "^2.3.2"
-  },
-  "devDependencies": {
-    "tape": "^4.6.2"
-  }
+  "homepage": "https://github.com/keik/watch-test#readme"
 }
