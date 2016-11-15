@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 
-var sw = require('spawn-wrap')
+var fs = require('fs')
 var foreground = require('foreground-child')
+var path = require('path')
+var sw = require('spawn-wrap')
 
 var wrapper = require.resolve('./wrap')
 
@@ -11,7 +13,7 @@ var argv = require('minimist')(process.argv.slice(2), {
 })
 
 if (argv.h || argv._.length === 0)
-  return process.exit(_help())
+  return _help()
 
 sw([wrapper], {OPTS: JSON.stringify(argv)})
 
@@ -21,10 +23,6 @@ foreground(argv._, function(done) {
 })
 
 function _help() {
-  console.log(`Usage: tape-watch [tests (glob)] {OPTIONS}
-
-     --help, -h  Show this mesage.
-
-  --verbose, -v  Run as verbose mode.
-`)
+  fs.createReadStream(path.join(__dirname, 'usage'))
+    .pipe(process.stdout)
 }

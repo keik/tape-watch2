@@ -1,0 +1,5 @@
+Usage: tape-watch [tests (glob)] {OPTIONS}
+
+     --help, -h  Show this mesage.
+
+  --verbose, -v  Run as verbose mode.

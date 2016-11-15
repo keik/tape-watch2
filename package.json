@@ -16,6 +16,7 @@
     "spawn-wrap": "^1.2.4"
   },
   "devDependencies": {
+    "concat-stream": "^1.5.2",
     "tape": "^4.6.2"
   },
   "scripts": {
