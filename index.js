@@ -13,7 +13,7 @@ function TestWatcher(opts) {
 
   this.verbose = opts.verbose
 
-  // Dependencies map like {module: [depended from...]}
+  // dependencies map like {module: [depended from...]}
   this.depsMap = {}
 
   // TODO parameterize
@@ -38,10 +38,6 @@ function TestWatcher(opts) {
 
   if (this.verbose)
     setTimeout(function() {this._stream.write('\nwaiting to change files...\n')}.bind(this), 100)
-}
-
-TestWatcher.prototype.add = function() {
-  d('TestWatcher#add')
 }
 
 TestWatcher.prototype.addHook = function() {
@@ -101,7 +97,7 @@ TestWatcher.prototype.addHook = function() {
 TestWatcher.prototype.run = function(changed) {
   d('TestWatcher#run', changed || '')
   if (changed) {
-    this._findTestsToRerun(changed).forEach(_rerun.bind(this))
+    TestWatcher.findTestsToRerun(changed, this.depsMap, this.testModules).forEach(_rerun.bind(this))
   } else {
     this.testModules.forEach(_rerun.bind(this))
   }
@@ -131,15 +127,23 @@ TestWatcher.prototype._deleteModuleCache = function() {
   })
 }
 
-TestWatcher.prototype._findTestsToRerun = function(changed, acc) {
-  d('TestWatcher#_findTestsToRerun', changed, acc)
+/**
+ * Find and return test modules to re-run from all test modules
+ * by traversing dependencies tree from changed files.
+ *
+ * @param {array<string>|string} changed - change file name (or names)
+ * @param {object} depsMap - dependencies map like {module: [depended from...]}
+ * @param {array<string>} allTestModules - test module names
+ */
+TestWatcher.findTestsToRerun = function(changed, depsMap, allTestModules, acc) {
+  d('TestWatcher.findTestsToRerun', changed, acc)
   acc = acc || []
   changed = Array.isArray(changed) ? changed : [changed]
   changed.forEach(function(c) {
-    if (this.testModules.includes(c)) {
+    if (allTestModules.indexOf(c) >= 0) {
       acc.push(c)
     } else {
-      this._findTestsToRerun(this.depsMap[c], acc)
+      TestWatcher.findTestsToRerun(depsMap[c], depsMap, allTestModules, acc)
     }
   }.bind(this))
   return acc
