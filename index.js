@@ -1,7 +1,12 @@
 var chokidar = require('chokidar')
+var debug = require('debug')('watch-test')
+var defined = require('defined')
+var minimatch = require('minimatch')
+var Module = require('module')
 var path = require('path')
 
-var d = require('debug')('watch-test')
+var cwd = process.cwd()
+var _moduleLoad = Module._load
 
 module.exports = TestWatcher
 
@@ -10,50 +15,39 @@ function TestWatcher(opts) {
     return new TestWatcher
 
   opts = opts || {}
-
   this.verbose = opts.verbose
+  this.excludePattern = defined(opts.excludePattern, '**/node_modules/**')
+  this.testModulePattern = defined(opts.testModulePattern, 'test/**/test-*')
 
-  // dependencies map like {module: [depended from...]}
-  this.depsMap = {}
-
-  // TODO parameterize
-  this.excludePatterns = [
-    /\/node_modules\//
-  ]
-
-  // TODO parameterize
-  this.testModulePatterns = [
-    /test-.+\.js/
-  ]
-
-  // TODO parameterize
-  this.testModules = [
-  ]
-
-  this.watcher = chokidar
-    .watch()
-    .on('change', this.run.bind(this))
-
+  this.depsMap = {}  // dependencies map like {module: [depended from...]}
+  this.testModules = []
+  this._watcher = {}
   this._stream = process.stdout
 
   if (this.verbose)
     setTimeout(function() {this._stream.write('\nwaiting to change files...\n')}.bind(this), 100)
 }
 
+/**
+ * Add hook to `require` function to collect test modules and store dependencies tree.
+ *
+ * If `require`d module ID would match with `excludePattern`, the module ID are ignored from this hook.
+ * If `require`d module ID would match with `testModulePattern`, the module ID are stored as test modules.
+ */
 TestWatcher.prototype.addHook = function() {
-  d('TestWatcher#addHook')
+  debug('TestWatcher#addHook')
+
   var self = this
 
-  var Module = module.constructor
-  var originalLoad = Module._load
-  Module._load = function(request, parent) {
-    var exports = originalLoad.apply(this, arguments)
+  Module._load = function hookedLoad(request, parent) {
+    debug('hookedLoad', request)
+    var exports = _moduleLoad.apply(this, arguments)
 
     // start filter to hook
     if (parent == null)
       return exports
 
-    if (self.excludePatterns.some(p => p.test(parent.id)))
+    if (minimatch(path.relative(cwd, parent.id), self.excludePattern))
       return exports
 
     var id
@@ -71,31 +65,39 @@ TestWatcher.prototype.addHook = function() {
     if (parsed.root === '' && parsed.dir === '') // at core module
       return exports
 
-    if (self.excludePatterns.some(p => p.test(id)))
+    if (minimatch(path.relative(cwd, id), self.excludePattern))
         return exports
     // end to filter
 
     // store test modules name
-    if (self.testModulePatterns.some(p => p.test(id))) {
+    if (minimatch(path.relative(cwd, id), self.testModulePattern)) {
       if (self.testModules.indexOf(id) < 0) {
-        d('  add to watch "' + id + '"')
+        debug('  add to watch "' + id + '"')
         self.testModules.push(id)
       }
+      return exports
     }
 
     // store dependencies
-    self.watcher.add(id)
     self.depsMap[id] = self.depsMap[id] || []
     if (self.depsMap[id].indexOf(parent.id) < 0) {
-      d('  stored dependencies of "' + id + '"')
+      debug('  stored dependencies of "' + id + '"')
       self.depsMap[id].push(parent.id)
     }
+
+    // add watcher
+    if (!self._watcher[id])
+      self._watcher[id] = []
+    var w = chokidar.watch(id).on('change', self.run.bind(self))
+    self._watcher[id].push(w)
+
     return exports
   }
 }
 
 TestWatcher.prototype.run = function(changed) {
-  d('TestWatcher#run', changed || '')
+  debug('TestWatcher#run', changed || '')
+  // TODO close watchers
   if (changed) {
     TestWatcher.findTestsToRerun(changed, this.depsMap, this.testModules).forEach(_rerun.bind(this))
   } else {
@@ -105,26 +107,42 @@ TestWatcher.prototype.run = function(changed) {
     setTimeout(function() {this._stream.write('\nwaiting to change files...\n')}.bind(this), 100)
 
   function _rerun(test) {
-    d('TestWatcher#run _rerun')
+    debug('TestWatcher#run _rerun')
     this._deleteModuleCache()
-    this.watcher.close()
     require(test)
-    this.watcher = chokidar
-      .watch(Object.keys(this.depsMap))
-      .on('change', this.run.bind(this))
   }
 }
 
 TestWatcher.prototype._deleteModuleCache = function() {
-  d('TestWatcher#_deleteModuleCache')
-  d('deleting cache of test modules...')
+  debug('TestWatcher#_deleteModuleCache')
+  debug('deleting cache of test modules...')
   this.testModules.forEach(m => {
     delete(require.cache[m])
   })
-  d('deleting cache of test runnner modules...')
+  debug('deleting cache of test runnner modules...')
   Object.keys(require.cache).filter(c => /tape/.test(c)).forEach(m => {
     delete(require.cache[m])
   })
+}
+
+TestWatcher.prototype.invalidateAll = function() {
+  debug('TestWatcher#invalidateAll')
+  Module._load = _moduleLoad
+  this.depsMap = {}
+  this.testModules = []
+
+  // close watchers
+  Object.keys(this._watcher).forEach(function(k) {
+    this._watcher[k].forEach(function(w) {
+      setTimeout(function() {
+        w.close()
+      }, 100)  // if to watch and close sequential, it occurs to remain process
+    })
+  }.bind(this))
+  this._watcher = {}
+
+  // clear cache
+  Object.keys(require.cache).forEach(function(key) { delete require.cache[key] })
 }
 
 /**
@@ -136,7 +154,7 @@ TestWatcher.prototype._deleteModuleCache = function() {
  * @param {array<string>} allTestModules - test module names
  */
 TestWatcher.findTestsToRerun = function(changed, depsMap, allTestModules, acc) {
-  d('TestWatcher.findTestsToRerun', changed, acc)
+  debug('TestWatcher.findTestsToRerun', changed, acc)
   acc = acc || []
   changed = Array.isArray(changed) ? changed : [changed]
   changed.forEach(function(c) {

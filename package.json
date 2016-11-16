@@ -12,7 +12,9 @@
   "dependencies": {
     "chokidar": "^1.6.1",
     "debug": "^2.3.2",
+    "defined": "^1.0.0",
     "foreground-child": "^1.5.3",
+    "minimatch": "^3.0.3",
     "spawn-wrap": "^1.2.4"
   },
   "devDependencies": {
