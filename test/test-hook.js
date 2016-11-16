@@ -1,11 +1,14 @@
 var test = require('tape')
 
+var concat = require('concat-stream')
 var join = require('path').join
 var fork = require('child_process').fork
-var relative = require('path').relative
-var vm = require('vm')
-var TestWatcher = require('../')
 var Module = require('module')
+var relative = require('path').relative
+var touch = require('touch')
+
+var TestWatcher = require('../')
+
 var load = Module._load
 var cwd = process.cwd()
 
@@ -98,6 +101,33 @@ test('`testModulePattern` option should work TestWatcher#addHook to store depend
     [ 'test/fixture/c-1.js', 'test/fixture/c-2-1.js', 'test/fixture/c-2.js', 'test/fixture/c.js', 'test/fixture/test/test-c.js' ]
   )
   setTimeout(function() {
+    watcher.invalidateAll()
+  }, 100)
+  t.end()
+})
+
+test.only('TODO watch', function(t) {
+  // stdout hack
+  var write = process.stdout.write
+  var c = concat(function(buf) {
+    process.stdout.write = write
+    t.is(buf,
+      `TAP version 13
+# c() should return "c"
+ok 1 should be equal
+`)
+  })
+  process.stdout.write = function(buf) {
+    c.write.apply(c, arguments)
+  }
+
+  var watcher = new TestWatcher()
+  watcher.invalidateAll()
+  watcher.addHook()
+  require('./fixture/test/test-c')
+
+  setTimeout(function() {
+    c.end()
     watcher.invalidateAll()
   }, 100)
   t.end()
