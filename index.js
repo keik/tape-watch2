@@ -130,12 +130,14 @@ TestWatcher.prototype.run = function(changed) {
 TestWatcher.prototype._deleteModuleCache = function() {
   debug('TestWatcher#_deleteModuleCache')
   debug('deleting cache of test modules...')
-  this.testModules.forEach(m => {
+  this.testModules.forEach(function(m) {
     delete(require.cache[m])
   })
   debug('deleting cache of test runnner modules...')
-  Object.keys(require.cache).filter(c => /tape/.test(c)).forEach(m => {
-    delete(require.cache[m])
+  Object.keys(require.cache).filter(function(c) {
+    /tape/.test(c).forEach(function(m) {
+      delete(require.cache[m])
+    })
   })
 }
 
