@@ -17,10 +17,7 @@ if (argv.h || argv._.length === 0)
 
 sw([wrapper], {OPTS: JSON.stringify(argv)})
 
-foreground(argv._, function(done) {
-  console.log('done')
-  return done()
-})
+foreground(argv._)
 
 function _help() {
   fs.createReadStream(path.join(__dirname, 'usage'))

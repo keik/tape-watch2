@@ -10,6 +10,12 @@ var _moduleLoad = Module._load
 
 module.exports = TestWatcher
 
+/**
+ * @param {object} opts
+ * @param {string} opts.verbose - output verbose log to stdout
+ * @param {string} opts.excludePattern - ignore `require` hook if `require`d module ID matched to specified pattern
+ * @param {string} opts.testModulePattern - store module as "test module" if `require`d module ID matched to specified pattern
+ */
 function TestWatcher(opts) {
   if (!(this instanceof TestWatcher))
     return new TestWatcher
@@ -36,6 +42,8 @@ function TestWatcher(opts) {
  */
 TestWatcher.prototype.addHook = function() {
   debug('TestWatcher#addHook')
+
+  this.invalidateAll()
 
   var self = this
 
@@ -97,8 +105,15 @@ TestWatcher.prototype.addHook = function() {
 
 TestWatcher.prototype.run = function(changed) {
   debug('TestWatcher#run', changed || '')
-  // TODO close watchers
+
   if (changed) {
+    // invalidate
+    this._watcher[changed].forEach(function(w) {
+      w.close()
+    })
+    // TODO delete only needed
+    this._deleteModuleCache()
+
     TestWatcher.findTestsToRerun(changed, this.depsMap, this.testModules).forEach(_rerun.bind(this))
   } else {
     this.testModules.forEach(_rerun.bind(this))
@@ -107,8 +122,7 @@ TestWatcher.prototype.run = function(changed) {
     setTimeout(function() {this._stream.write('\nwaiting to change files...\n')}.bind(this), 100)
 
   function _rerun(test) {
-    debug('TestWatcher#run _rerun')
-    this._deleteModuleCache()
+    debug('TestWatcher#__rerun', test)
     require(test)
   }
 }
@@ -161,7 +175,8 @@ TestWatcher.findTestsToRerun = function(changed, depsMap, allTestModules, acc) {
     if (allTestModules.indexOf(c) >= 0) {
       acc.push(c)
     } else {
-      TestWatcher.findTestsToRerun(depsMap[c], depsMap, allTestModules, acc)
+      if (depsMap[c])
+        TestWatcher.findTestsToRerun(depsMap[c], depsMap, allTestModules, acc)
     }
   }.bind(this))
   return acc
