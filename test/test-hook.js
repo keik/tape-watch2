@@ -1,14 +1,8 @@
 var test = require('tape')
 
-var join = require('path').join
-var fork = require('child_process').fork
-var Module = require('module')
-var touch = require('touch')
-
 var TestWatcher = require('../')
 var relativify = require('./utils').relativify
 
-var load = Module._load
 var cwd = process.cwd()
 
 test('TestWatcher#addHook should store dependencies map and test modules excluding by `**/node_modules/**` by defaults (1)', function(t) {
@@ -87,6 +81,6 @@ test('`testModulePattern` option should work TestWatcher#addHook to store depend
   t.end()
 })
 
-test.onFinish(function(a,b,c) {
+test.onFinish(function() {
   process.stdout.write = function() {}
 })

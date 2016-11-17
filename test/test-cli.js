@@ -2,8 +2,6 @@ var test = require('tape')
 
 var concat = require('concat-stream')
 var fs = require('fs')
-var path = require('path')
-
 var spawn = require('child_process').spawn
 
 test('`watch-test` with no options should show usage', function(t) {

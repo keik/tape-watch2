@@ -24,7 +24,7 @@
     "touch": "^1.0.0"
   },
   "scripts": {
-    "test": "nyc --all tape test/test*.js"
+    "test": "nyc --all -x bin -x test tape test/test*.js"
   },
   "repository": {
     "type": "git",

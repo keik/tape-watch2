@@ -1,15 +1,10 @@
 var test = require('tape')
 
-var join = require('path').join
-var fork = require('child_process').fork
-var Module = require('module')
-var relative = require('path').relative
 var touch = require('touch')
 
 var TestWatcher = require('../')
 var relativify = require('./utils').relativify
 
-var load = Module._load
 var cwd = process.cwd()
 
 test('`testModulePattern` option should work TestWatcher#addHook to store dependencies map and test modules', function(t) {
@@ -32,7 +27,7 @@ test('`testModulePattern` option should work TestWatcher#addHook to store depend
     setTimeout(function() {
       touch.sync('./test/fixture/c-2-1.js')
       resolve()
-    }, 100)
+    }, 1000)
   }).then(function() {
     setTimeout(function() {
       watcher.invalidateAll()
@@ -41,6 +36,6 @@ test('`testModulePattern` option should work TestWatcher#addHook to store depend
   t.end()
 })
 
-test.onFinish(function(a,b,c) {
+test.onFinish(function() {
   process.stdout.write = function() {}
 })
