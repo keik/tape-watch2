@@ -105,13 +105,10 @@ TestWatcher.prototype.addHook = function() {
 
 TestWatcher.prototype.run = function(changed) {
   debug('TestWatcher#run', changed || '')
-
   if (changed) {
-    // invalidate
     this._watcher[changed].forEach(function(w) {
       w.close()
     })
-    // TODO delete only needed
     this._deleteModuleCache()
 
     TestWatcher.findTestsToRerun(changed, this.depsMap, this.testModules).forEach(_rerun.bind(this))
@@ -129,16 +126,16 @@ TestWatcher.prototype.run = function(changed) {
 
 TestWatcher.prototype._deleteModuleCache = function() {
   debug('TestWatcher#_deleteModuleCache')
-  debug('deleting cache of test modules...')
   this.testModules.forEach(function(m) {
     delete(require.cache[m])
   })
-  debug('deleting cache of test runnner modules...')
-  Object.keys(require.cache).filter(function(c) {
-    /tape/.test(c).forEach(function(m) {
+  Object.keys(require.cache)
+    .filter(function(c) {
+      return /tape/.test(c)
+    })
+    .forEach(function(m) {
       delete(require.cache[m])
     })
-  })
 }
 
 TestWatcher.prototype.invalidateAll = function() {
