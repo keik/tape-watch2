@@ -1,23 +1,22 @@
 #!/usr/bin/env node
 
 var fs = require('fs')
-var foreground = require('foreground-child')
 var path = require('path')
-var sw = require('spawn-wrap')
 
-var wrapper = require.resolve('./wrap')
+var TapeWatcher = require('../')
 
 var argv = require('minimist')(process.argv.slice(2), {
-  boolean: ['h', 'v'],
-  alias: {h: 'help', v: 'verbose'}
+  boolean: ['e', 'h', 'v', 'x'],
+  alias: {e: 'entry', h: 'help', v: 'verbose', x: 'exclude'}
 })
 
 if (argv.h || argv._.length === 0)
   return _help()
 
-sw([wrapper], {OPTS: JSON.stringify(argv)})
-
-foreground(argv._)
+var tapeWatcher = new TapeWatcher(argv)
+tapeWatcher.addHook()
+tapeWatcher.add(argv._)
+tapeWatcher.start()
 
 function _help() {
   fs.createReadStream(path.join(__dirname, 'usage'))

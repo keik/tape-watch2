@@ -1,9 +1,9 @@
-# watch-test
+# tape-watch2
 
-[![Travis CI](https://img.shields.io/travis/keik/watch-test.svg?style=flat-square)](https://travis-ci.org/keik/watch-test)
-[![Coverage Status](https://img.shields.io/coveralls/keik/watch-test.svg?style=flat-square)](https://coveralls.io/github/keik/watch-test)
+[![Travis CI](https://img.shields.io/travis/keik/tape-watch2.svg?style=flat-square)](https://travis-ci.org/keik/tape-watch2)
+[![Coverage Status](https://img.shields.io/coveralls/keik/tape-watch2.svg?style=flat-square)](https://coveralls.io/github/keik/tape-watch2)
 
-Watch changes of files and re-run only tests on dependencies of changed file.
+[tape](https://github.com/substack/tape) with watch mode.
 
 
 ## Installation
@@ -13,13 +13,13 @@ No releases yet... :anguished:
 
 ## Usage
 
-Run just `watch-test` command with your test command as sub-command like:
+Run `tape-watch` command instead of `tape` command like:
 
 ```
-watch-test npm test
+tape-watch 'test/test-*.js'
 ```
 
-Then sub-command would spawn hacked-process that watches file changes of files.
+For more details, run `tape-watch --help`
 
 
 ## Test

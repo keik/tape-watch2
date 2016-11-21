@@ -1,7 +1,7 @@
 {
-  "name": "watch-test",
+  "name": "tape-watch2",
   "version": "0.0.0-dev",
-  "description": "Watch changes of files and re-run only tests on dependencies of changed file.",
+  "description": "tape with watch mode.",
   "main": "index.js",
   "bin": {
     "watch-test": "./bin/watch-test"
@@ -13,10 +13,9 @@
     "chokidar": "^1.6.1",
     "debug": "^2.3.2",
     "defined": "^1.0.0",
-    "foreground-child": "^1.5.3",
+    "glob": "^7.1.1",
     "minimatch": "^3.0.3",
-    "minimist": "^1.2.0",
-    "spawn-wrap": "^1.2.4"
+    "minimist": "^1.2.0"
   },
   "devDependencies": {
     "concat-stream": "^1.5.2",
@@ -30,7 +29,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/keik/watch-test.git"
+    "url": "git+https://github.com/keik/tape-watch2.git"
   },
   "author": {
     "name": "KATO Kei",
@@ -39,7 +38,7 @@
   },
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/keik/watch-test/issues"
+    "url": "https://github.com/keik/tape-watch2/issues"
   },
-  "homepage": "https://github.com/keik/watch-test#readme"
+  "homepage": "https://github.com/keik/tape-watch2#readme"
 }
