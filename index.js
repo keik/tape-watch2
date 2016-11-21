@@ -80,7 +80,6 @@ TapeWatcher.prototype.addHook = function() {
     }
 
     // add watcher
-    console.log(id)
     if (!self._watcher[id])
       self._watcher[id] = []
     var w = chokidar.watch(id).on('change', self.run.bind(self))
@@ -111,13 +110,14 @@ TapeWatcher.prototype.start = function() {
 
 TapeWatcher.prototype.run = function(changed) {
   debug('TapeWatcher#run', changed || '')
+  var deps = TapeWatcher.findDeps(changed, this._depsMap, this._tests)
   this._watcher[changed].forEach(function(w) {
     w.close()
   })
 
   var tests = TapeWatcher.findTestsToRerun(changed, this._depsMap, this._tests)
   // retrieve parents of changed dependencies
-  // this._deleteModuleCache(tests.concat(changed))
+  this._deleteModuleCache(deps)
 
   var start = Number(new Date())
   tests.forEach(function(test) {
@@ -128,12 +128,10 @@ TapeWatcher.prototype.run = function(changed) {
 
 TapeWatcher.prototype._deleteModuleCache = function(changed) {
   debug('TapeWatcher#_deleteModuleCache', changed)
-  console.log('@', this._depsMap)
   changed.forEach(function(m) {
     delete(require.cache[m])
     delete(this._depsMap[m])
   }.bind(this))
-  console.log('@@', this._depsMap)
   Object.keys(require.cache)
     .filter(function(c) {
       return /tape/.test(c)
@@ -192,6 +190,18 @@ TapeWatcher.findTestsToRerun = function(changed, depsMap, tests, acc) {
       if (depsMap[c])
         TapeWatcher.findTestsToRerun(depsMap[c], depsMap, tests, acc)
     }
+  }.bind(this))
+  return acc
+}
+
+TapeWatcher.findDeps = function(changed, depsMap, tests, acc) {
+  debug('TapeWatcher.findDeps', changed)
+  acc = acc || []
+  changed = Array.isArray(changed) ? changed : [changed]
+  changed.forEach(function(c) {
+    acc.push(c)
+    if (depsMap[c] && tests.indexOf(c) < 0)
+      TapeWatcher.findDeps(depsMap[c], depsMap, tests, acc)
   }.bind(this))
   return acc
 }
