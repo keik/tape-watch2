@@ -5,6 +5,7 @@ var glob = require('glob')
 var minimatch = require('minimatch')
 var Module = require('module')
 var path = require('path')
+var resolve = require('resolve').sync
 
 var cwd = process.cwd()
 var _moduleLoad = Module._load
@@ -74,7 +75,7 @@ TapeWatcher.prototype.addHook = function() {
     // store dependencies
     self._depsMap[id] = self._depsMap[id] || []
     if (self._depsMap[id].indexOf(parent.id) < 0) {
-      debug('  stored dependencies of "' + id + '"')
+      debug('  stored ' + parent.id + ' as dependencies of "' + id + '"')
       self._depsMap[id].push(parent.id)
     }
 
@@ -169,14 +170,16 @@ TapeWatcher.prototype.invalidateAll = function() {
 }
 
 TapeWatcher.prototype.printWaiting = function(tcount, start, end) {
-  if (this.verbose) {
-    require('tape').getHarness()._results
-      .on('done', function() {
-        // write to stream in tape
-        this._stream.write('\n' + tcount + ' tests done in ' + ((end - start) / 1000).toFixed(2) + ' seconds')
-        this._stream.write('\nwaiting to change files...\n')
-      })
-  }
+  var self = this
+  var results = require(resolve('tape', {basedir: process.cwd()})).getHarness()._results
+  results.on('done', function() {
+    this.close()  // to print stats
+    this.closed = false  // hack to avoid duplicated closing
+    if (self.verbose) {
+      console.log(this.count + ' tests done in ' + ((end - start) / 1000).toFixed(2) + ' seconds')
+      console.log('waiting to change files...\n')
+    }
+  })
 }
 
 /**

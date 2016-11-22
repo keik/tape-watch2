@@ -56,7 +56,7 @@ test('`excludePattern` option should work TapeWatcher#addHook to store dependenc
 
   // dependencies of node_modules like `tape` exist
   t.deepEqual(relativify(watcher._depsMap, cwd)['node_modules/tape/index.js'],
-    [ 'test/fixture/test/test-b.js' ]
+    [ 'test/fixture/test/test-b.js', 'index.js' ]
   )
   t.deepEqual(relativify(watcher._tests, cwd),
     [ 'test/fixture/test/test-b.js' ]
