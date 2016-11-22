@@ -1,5 +1,5 @@
 var chokidar = require('chokidar')
-var debug = require('debug')('watch-test')
+var debug = require('debug')('tape-watch')
 var defined = require('defined')
 var glob = require('glob')
 var minimatch = require('minimatch')
@@ -128,7 +128,6 @@ TapeWatcher.prototype.invalidate = function(deps) {
   deps = Array.isArray(deps) ? deps : [deps]
   deps.forEach(function(id) {
 
-    console.log('invalidate', id)
     // invalidate watcher of dependencies
     this._watcher[id].close()
     delete(this._watcher[id])
