@@ -29,7 +29,6 @@ function TapeWatcher(opts) {
   this._depsMap = {}  // dependencies map like {module: [depended from...]}
   this._tests = []
   this._watcher = {}
-  this._stream = process.stdout
 }
 
 /**
@@ -81,9 +80,7 @@ TapeWatcher.prototype.addHook = function() {
 
     // add watcher
     if (!self._watcher[id])
-      self._watcher[id] = []
-    var w = chokidar.watch(id).on('change', self.run.bind(self))
-    self._watcher[id].push(w)
+      self._watcher[id] = chokidar.watch(id).on('change', self.run.bind(self))
 
     return exports
   }
@@ -110,28 +107,41 @@ TapeWatcher.prototype.start = function() {
 
 TapeWatcher.prototype.run = function(changed) {
   debug('TapeWatcher#run', changed || '')
-  var deps = TapeWatcher.findDeps(changed, this._depsMap, this._tests)
-  this._watcher[changed].forEach(function(w) {
-    w.close()
-  })
 
-  var tests = TapeWatcher.findTestsToRerun(changed, this._depsMap, this._tests)
-  // retrieve parents of changed dependencies
-  this._deleteModuleCache(deps)
+  // retrieve dependencies of changed
+  var deps = TapeWatcher.findDeps(changed, this._depsMap, this._tests)
+  this.invalidate(deps)
+
+  var tests = deps.filter(function(id) {
+    return this._tests.indexOf(id) > -1
+  }.bind(this))
 
   var start = Number(new Date())
   tests.forEach(function(test) {
     require(test)
   })
-  this.printWaiting(tests.length, start, Number(new Date))
+  this.printWaiting(this._tests.length, start, Number(new Date))
 }
 
-TapeWatcher.prototype._deleteModuleCache = function(changed) {
-  debug('TapeWatcher#_deleteModuleCache', changed)
-  changed.forEach(function(m) {
-    delete(require.cache[m])
-    delete(this._depsMap[m])
+TapeWatcher.prototype.invalidate = function(deps) {
+  debug('TapeWatcher#invalidate', deps)
+  deps = Array.isArray(deps) ? deps : [deps]
+  deps.forEach(function(id) {
+
+    console.log('invalidate', id)
+    // invalidate watcher of dependencies
+    this._watcher[id].close()
+    delete(this._watcher[id])
+
+    // invalidate module caches of dependencies
+    delete(require.cache[id])
+
+    // invalidate dependencies map
+    delete(this._depsMap[id])
+
   }.bind(this))
+
+  // invalidate module caches of tape
   Object.keys(require.cache)
     .filter(function(c) {
       return /tape/.test(c)
@@ -148,12 +158,8 @@ TapeWatcher.prototype.invalidateAll = function() {
   this._tests = []
 
   // close watchers
-  Object.keys(this._watcher).forEach(function(k) {
-    this._watcher[k].forEach(function(w) {
-      setTimeout(function() {
-        w.close()
-      }, 100)  // if to watch and close sequential, it occurs to remain process
-    })
+  Object.keys(this._watcher).forEach(function(id) {
+    this._watcher[id].close()
   }.bind(this))
   this._watcher = {}
 
@@ -164,36 +170,24 @@ TapeWatcher.prototype.invalidateAll = function() {
 }
 
 TapeWatcher.prototype.printWaiting = function(tcount, start, end) {
-  if (this.verbose)
-    setTimeout(function() {
-      this._stream.write('\n' + tcount + ' tests done in ' + ((end - start) / 1000).toFixed(2) + ' seconds')
-      this._stream.write('\nwaiting to change files...\n')
-    }.bind(this), 100)
+  if (this.verbose) {
+    require('tape').getHarness()._results
+      .on('done', function() {
+        // write to stream in tape
+        this._stream.write('\n' + tcount + ' tests done in ' + ((end - start) / 1000).toFixed(2) + ' seconds')
+        this._stream.write('\nwaiting to change files...\n')
+      })
+  }
 }
 
 /**
- * Find and return test modules to re-run from all test modules
- * by traversing dependencies tree from changed files.
+ * Find and return all modules of dependencies on changed module
+ * by traversing dependencies tree until reaching to test modules.
  *
- * @param {array<string>|string} changed - change file name (or names)
- * @param {object} depsMap - dependencies map like {module: [depended from...]}
- * @param {array<string>} tests - test module names
+ * @param {array<string>|string} changed - change module ID
+ * @param {object} depsMap - dependencies map like {module_id: [depended_from_id...]}
+ * @param {array<string>} tests - test module IDs
  */
-TapeWatcher.findTestsToRerun = function(changed, depsMap, tests, acc) {
-  debug('TapeWatcher.findTestsToRerun', changed)
-  acc = acc || []
-  changed = Array.isArray(changed) ? changed : [changed]
-  changed.forEach(function(c) {
-    if (tests.indexOf(c) >= 0) {
-      acc.push(c)
-    } else {
-      if (depsMap[c])
-        TapeWatcher.findTestsToRerun(depsMap[c], depsMap, tests, acc)
-    }
-  }.bind(this))
-  return acc
-}
-
 TapeWatcher.findDeps = function(changed, depsMap, tests, acc) {
   debug('TapeWatcher.findDeps', changed)
   acc = acc || []

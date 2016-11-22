@@ -7,35 +7,66 @@ var relativify = require('./utils').relativify
 
 var cwd = process.cwd()
 
-test('`testModulePattern` option should work TestWatcher#addHook to store dependencies map and test modules', function(t) {
+test('TestWatcher should watch changes of files and re-run on changed', function(t) {
   var watcher = new TestWatcher()
-
   watcher.addHook()
-  require('./fixture/test/test-c')
+  watcher.add(['./test/fixture/test/test-c.js'])
+  watcher.start()
+
   // no modules are stored as dependencies because all required modules are as `testModules` by pattern '**'
-  t.deepEqual(relativify(watcher.depsMap, cwd),
+  t.deepEqual(relativify(watcher._depsMap, cwd),
     { 'test/fixture/c-1.js': [ 'test/fixture/c.js' ],
       'test/fixture/c-2-1.js': [ 'test/fixture/c-2.js' ],
       'test/fixture/c-2.js': [ 'test/fixture/c.js' ],
-      'test/fixture/c.js': [ 'test/fixture/test/test-c.js' ] }
+      'test/fixture/c.js': [ 'test/fixture/test/test-c.js' ],
+      'test/fixture/test/test-c.js': [ 'index.js' ] }
   )
   // all required module are as `testModules`
-  t.deepEqual(relativify(watcher.testModules, cwd),
+  t.deepEqual(relativify(watcher._tests, cwd),
     [ 'test/fixture/test/test-c.js' ]
   )
-  new Promise(function(resolve) {
-    setTimeout(function() {
-      touch.sync('./test/fixture/c-2-1.js')
-      resolve()
-    }, 1000)
-  }).then(function() {
-    setTimeout(function() {
-      watcher.invalidateAll()
-    }, 1000)
-  })
-  t.end()
-})
 
-test.onFinish(function() {
-  process.stdout.write = function() {}
+  function _test() {
+    t.is(
+      watcher._tests.length,
+      1,
+      'test count should be 1')
+
+    t.deepEqual(
+      Object.keys(watcher._watcher),
+      Object.keys(watcher._depsMap),
+      'watching modules should be on only dependencies of tests')
+  }
+
+  Promise.resolve().then(function() {
+    return new Promise(function(resolve) {
+      // touch after 1s
+      setTimeout(function() {
+        touch.sync('./test/fixture/c-2-1.js')
+        _test()
+        resolve()
+      }, 1000)
+    })
+  }).then(function() {
+    return new Promise(function(resolve) {
+      // touch after 1s
+      setTimeout(function() {
+        touch.sync('./test/fixture/c-2-1.js')
+        _test()
+        resolve()
+      }, 1000)
+    })
+  }).then(function() {
+    // end test after 1s
+    setTimeout(function() {
+      _test()
+      watcher.invalidateAll()
+      t.end()
+    }, 1000)
+  }).catch(function(e) {
+    t.fail(e)
+    console.error(e)
+    watcher.invalidateAll()
+    t.end()
+  })
 })

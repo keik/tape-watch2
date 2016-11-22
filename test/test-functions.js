@@ -2,7 +2,7 @@ var test = require('tape')
 
 var TestWatcher = require('../')
 
-test('TestWatcher.findTestsToRerun() should return test entries on dependencies of the changed file', function(t) {
+test('TestWatcher.findDeps() should return test entries on dependencies of the changed file', function(t) {
   var testModules = [
     '/path/to/src/test/test-b.js',
     '/path/to/src/test/test-c-1.js',
@@ -46,10 +46,13 @@ test('TestWatcher.findTestsToRerun() should return test entries on dependencies 
     ]
   }
 
-  t.deepEqual(TestWatcher.findTestsToRerun('/path/to/src/c-2-1.js', depsMap, testModules),
+  t.deepEqual(TestWatcher.findDeps('/path/to/src/c-2-1.js', depsMap, testModules),
     [
+      '/path/to/src/c-2-1.js',
       '/path/to/src/test/test-c-2-1.js',
+      '/path/to/src/c-2.js',
       '/path/to/src/test/test-c-2.js',
+      '/path/to/src/c.js',
       '/path/to/src/test/test-c.js'
     ]
   )
