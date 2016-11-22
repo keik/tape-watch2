@@ -2,16 +2,24 @@
 
 var fs = require('fs')
 var path = require('path')
+var resolve = require('resolve').sync
 
 var TapeWatcher = require('../')
 
 var argv = require('minimist')(process.argv.slice(2), {
   boolean: ['e', 'h', 'v', 'x'],
-  alias: {e: 'entry', h: 'help', v: 'verbose', x: 'exclude'}
+  alias: {e: 'entry', h: 'help', r: 'require', v: 'verbose', x: 'exclude'}
 })
 
 if (argv.h || argv._.length === 0)
   return _help()
+
+var requires = Array.isArray(argv.r) ? argv.r : [argv.r]
+requires.forEach(function(module) {
+  if (module) {
+    require(resolve(module, {basedir: process.cwd()}))
+  }
+})
 
 var tapeWatcher = new TapeWatcher(argv)
 tapeWatcher.addHook()
