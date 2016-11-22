@@ -4,7 +4,7 @@
   "description": "tape with watch mode.",
   "main": "index.js",
   "bin": {
-    "watch-test": "./bin/watch-test"
+    "tape-watch": "./bin/tape-watch"
   },
   "directories": {
     "test": "test"
