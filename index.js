@@ -19,9 +19,6 @@ module.exports = TapeWatcher
  * @param {string} opts.testModulePattern - store module as "test module" if `require`d module ID matched to specified pattern
  */
 function TapeWatcher(opts) {
-  if (!(this instanceof TapeWatcher))
-    return new TapeWatcher
-
   debug('#TapeWatcher#Ctor', opts)
   opts = opts || {}
   this.verbose = opts.verbose
@@ -72,7 +69,7 @@ TapeWatcher.prototype.addHook = function() {
     if (minimatch(path.relative(cwd, id), self.excludePattern))
       return exports
 
-    // test whether requested module ID matches excludePattern
+    // test whether parent module ID matches excludePattern
     if (minimatch(parent.id, self.excludePattern))
       return exports
 
