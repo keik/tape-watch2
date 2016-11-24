@@ -46,16 +46,15 @@ TapeWatcher.prototype.addHook = function() {
     debug('hookedLoad', request)
     var exports = _moduleLoad.apply(this, arguments)
 
-    // start filter to hook
-    if (parent == null)
-      return exports
+    // -- start filter to hook
 
-    if (minimatch(path.relative(cwd, parent.id), self.excludePattern))
-      return exports
+    // test whether parent module ID contains excludePattern
+    // if (minimatch(path.relative(cwd, parent.id), self.excludePattern))
+    //   return exports
 
     var id
     try {
-      id = require.resolve(request)
+      id = resolve(request, {basedir: cwd})
     } catch (e) {
       try {
         id = require.resolve(path.resolve(path.dirname(parent.id), request))
@@ -64,13 +63,20 @@ TapeWatcher.prototype.addHook = function() {
       }
     }
 
+    // test whether requested module is core module
     var parsed = path.parse(id)
-    if (parsed.root === '' && parsed.dir === '') // at core module
+    if (parsed.root === '' && parsed.dir === '')
       return exports
 
+    // test whether requested module ID matches excludePattern
     if (minimatch(path.relative(cwd, id), self.excludePattern))
-        return exports
-    // end to filter
+      return exports
+
+    // test whether requested module ID matches excludePattern
+    if (minimatch(parent.id, self.excludePattern))
+      return exports
+
+    // -- end to filter
 
     // store dependencies
     self._depsMap[id] = self._depsMap[id] || []
@@ -170,6 +176,9 @@ TapeWatcher.prototype.invalidateAll = function() {
 }
 
 TapeWatcher.prototype.printWaiting = function(tcount, start, end) {
+  debug('TapeWatcher#printWaiting')
+  debug('  _watcher', Object.keys(this._watcher))
+  debug('  _depsMap', this._depsMap)
   var self = this
   var results = require(resolve('tape', {basedir: process.cwd()})).getHarness()._results
   results.on('done', function() {
