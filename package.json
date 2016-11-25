@@ -39,6 +39,12 @@
     "url": "keik.info"
   },
   "license": "MIT",
+  "keywords": [
+    "tap",
+    "tape",
+    "test",
+    "watch"
+  ],
   "bugs": {
     "url": "https://github.com/keik/tape-watch2/issues"
   },
