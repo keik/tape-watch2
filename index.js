@@ -45,10 +45,6 @@ TapeWatcher.prototype.addHook = function() {
 
     // -- start filter to hook
 
-    // test whether parent module ID contains excludePattern
-    // if (minimatch(path.relative(cwd, parent.id), self.excludePattern))
-    //   return exports
-
     var id
     try {
       id = resolve(request, {basedir: cwd})
@@ -70,7 +66,8 @@ TapeWatcher.prototype.addHook = function() {
       return exports
 
     // test whether parent module ID matches excludePattern
-    if (minimatch(parent.id, self.excludePattern))
+    if (minimatch(parent.id, self.excludePattern) &&
+      parent.id !== __filename)
       return exports
 
     // -- end to filter
